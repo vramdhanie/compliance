@@ -1,0 +1,14 @@
+pymongo==4.6.1
+python-dotenv==1.0.1
+pydantic==2.6.1
+pydantic-extra-types==2.2.0
+email-validator==2.1.0
+
+# Development dependencies
+pytest==7.4.3
+black==23.11.0
+isort==5.12.0
+mypy==1.7.1
+setuptools==69.0.2
+mypy-extensions==1.0.0
+typing-extensions>=4.8.0 
