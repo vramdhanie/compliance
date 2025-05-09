@@ -58,7 +58,7 @@ class MongoDB:
         db = self.get_database()
         if db is None:
             raise ConnectionError("Database connection not established")
-        return cast(MongoCollection[Dict[str, Any]], db[collection_name])
+        return cast(MongoCollection[dict[str, Any]], db[collection_name])
 
     def close(self):
         """Close the MongoDB connection"""

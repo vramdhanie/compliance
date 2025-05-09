@@ -7,6 +7,7 @@ from app.schemas.document import (
     DocumentMetadata,
     DocumentSearchResult
 )
+from app.schemas.qa_pair import QAPair, Source, FeedbackItem
 
 __all__ = [
     "UserBase",
@@ -17,5 +18,8 @@ __all__ = [
     "Document",
     "DocumentChunk",
     "DocumentMetadata",
-    "DocumentSearchResult"
+    "DocumentSearchResult",
+    "QAPair",
+    "Source",
+    "FeedbackItem"
 ] 

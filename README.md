@@ -17,6 +17,7 @@ This application helps organizations manage, analyze, and extract insights from 
 - **Document Q&A**: Ask questions about your compliance documents and get accurate answers with citations
 - **Document Analysis**: Extract key concepts, entities, and relationships from documents
 - **Vector-based Similarity**: Find similar documents and concepts using embedded vector representations
+- **Table Parsing**: Automatically detect and parse tabular compliance data
 
 The system uses MongoDB for document storage and Azure OpenAI for AI capabilities, with a modular architecture that allows for flexible deployment and scaling.
 
@@ -24,6 +25,7 @@ The system uses MongoDB for document storage and Azure OpenAI for AI capabilitie
 
 - **Document Processing Pipeline**: Parse various document formats (PDF, DOCX, CSV, etc.)
 - **Smart Chunking**: Break documents into semantic chunks for better retrieval
+- **Table Detection**: Automatically identify and parse tabular compliance data
 - **Vector Embeddings**: Store document embeddings for semantic similarity search
 - **MongoDB Integration**: Scalable document storage with full-text search capabilities
 - **Azure OpenAI Integration**: Advanced LLM capabilities for document understanding
@@ -55,7 +57,8 @@ compliance/
 │   │   ├── question_service.py # Document Q&A service
 │   │   └── document_service.py # Document processing service
 │   └── utils/              # Utility functions
-│       └── __init__.py
+│       ├── __init__.py
+│       └── text_processor.py # Document chunking and processing
 ├── scripts/                # Utility scripts
 │   ├── setup_uv.sh         # Setup script for Unix/macOS
 │   └── setup_uv.bat        # Setup script for Windows
@@ -180,24 +183,26 @@ python main.py
 ```python
 from app.database import DocumentStorage, VectorStore
 from app.services.question_service import DocumentQA
+from app.utils.text_processor import TextProcessor
 
 # Initialize storage
 doc_storage = DocumentStorage()
 vector_store = VectorStore()
 
-# Initialize document QA service
+# Initialize text processor and QA service
+text_processor = TextProcessor(chunk_size=1000, chunk_overlap=200)
 qa_service = DocumentQA(doc_storage, vector_store)
 
 # Process documents
 results = qa_service.process_documents(
-    ["path/to/document1.pdf", "path/to/document2.docx"],
+    ["path/to/document1.pdf", "path/to/document2.docx", "path/to/compliance_table.txt"],
     parser,
-    processor
+    text_processor
 )
 
 # Ask questions about your documents
 answer = qa_service.answer_question(
-    "What are the key compliance requirements for data protection?",
+    "What are the key compliance requirements for Identity & Access Management?",
     n_results=5
 )
 
@@ -205,6 +210,34 @@ print(answer["answer"])
 # Access source information
 for source in answer["sources"]:
     print(f"Source: {source['source']}, Relevance: {source['relevance']}")
+```
+
+### Table Parsing
+
+The system can automatically detect and parse compliance tables in this format:
+
+```
+1 | Identity & Access Management | YES | Sybill uses Role-Based Access Control and the principle of least privilege... | access-control-policy
+2 | Data Protection | PARTIAL | Encryption is implemented for data in transit, but at-rest encryption... | data-protection-policy
+```
+
+Each table row is stored as a separate chunk with structured metadata:
+
+```python
+# Retrieve documents with tabular data
+tabular_docs = doc_storage.find_chunks_by_metadata({"is_table_row": True})
+
+# Filter by compliance category
+identity_controls = doc_storage.find_chunks_by_metadata({
+    "is_table_row": True,
+    "control_category": "Identity & Access Management"
+})
+
+# Find all fully compliant controls
+compliant_controls = doc_storage.find_chunks_by_metadata({
+    "is_table_row": True,
+    "compliance_status": "YES"
+})
 ```
 
 ### Getting Structured JSON Responses

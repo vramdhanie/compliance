@@ -1,5 +1,6 @@
 import re
 import uuid
+from typing import Any, Tuple, Optional
 
 class TextProcessor:
     """Process and chunk text for efficient storage and retrieval"""
@@ -16,28 +17,62 @@ class TextProcessor:
         # Extract concepts and keywords
         concepts = self.extract_concepts(doc_content)
         
-        # Split text into chunks
-        chunks = self.split_text(doc_content)
+        # Check if the document contains table data
+        table_rows = self.detect_and_parse_table(doc_content)
         
         processed_chunks = []
-        for i, chunk_text in enumerate(chunks):
-            chunk_id = str(uuid.uuid4())
-            
-            # Create chunk document
-            chunk_doc = {
-                "chunk_id": chunk_id,
-                "document_id": doc_metadata.get("source"),
-                "content": chunk_text,
-                "chunk_index": i,
-                "concepts": self.extract_concepts(chunk_text),
-                "metadata": {
+        
+        if table_rows:
+            # Process as tabular data
+            for i, row in enumerate(table_rows):
+                chunk_id = str(uuid.uuid4())
+                
+                # Create structured metadata for table row
+                row_metadata = {
                     **doc_metadata,
                     "chunk_index": i,
-                    "total_chunks": len(chunks)
+                    "total_chunks": len(table_rows),
+                    "is_table_row": True,
+                    "row_number": row.get("row_number", i+1),
+                    "control_category": row.get("category", ""),
+                    "compliance_status": row.get("status", ""),
+                    "policy_reference": row.get("policy_reference", "")
                 }
-            }
+                
+                # Create chunk document
+                chunk_doc = {
+                    "chunk_id": chunk_id,
+                    "document_id": doc_metadata.get("source"),
+                    "content": row.get("description", ""),
+                    "chunk_index": i,
+                    "concepts": [row.get("category", "")] + self.extract_concepts(row.get("description", "")),
+                    "metadata": row_metadata
+                }
+                
+                processed_chunks.append(chunk_doc)
+        else:
+            # Process as regular text
+            chunks = self.split_text(doc_content)
             
-            processed_chunks.append(chunk_doc)
+            for i, chunk_text in enumerate(chunks):
+                chunk_id = str(uuid.uuid4())
+                
+                # Create chunk document
+                chunk_doc = {
+                    "chunk_id": chunk_id,
+                    "document_id": doc_metadata.get("source"),
+                    "content": chunk_text,
+                    "chunk_index": i,
+                    "concepts": self.extract_concepts(chunk_text),
+                    "metadata": {
+                        **doc_metadata,
+                        "chunk_index": i,
+                        "total_chunks": len(chunks),
+                        "is_table_row": False
+                    }
+                }
+                
+                processed_chunks.append(chunk_doc)
         
         # Create document summary
         document_summary = {
@@ -45,11 +80,48 @@ class TextProcessor:
             "title": self._extract_title(doc_content) or doc_metadata.get("source"),
             "concepts": concepts,
             "summary": self._generate_summary(doc_content),
-            "metadata": doc_metadata,
+            "metadata": {
+                **doc_metadata,
+                "contains_table": bool(table_rows)
+            },
             "chunks": [chunk["chunk_id"] for chunk in processed_chunks]
         }
         
         return document_summary, processed_chunks
+    
+    def detect_and_parse_table(self, text: str) -> list[dict[str, Any]]:
+        """
+        Detect and parse tabular data in the specified format:
+        row_number | category | status | description | policy_reference
+        
+        Returns a list of dictionaries, one per row, or an empty list if no table is detected
+        """
+        if not text:
+            return []
+        
+        # Pattern for the specified table format
+        # Look for numbers followed by pipe and content patterns
+        table_pattern = r'(\d+)\s*\|\s*([^|]+)\s*\|\s*(YES|NO|PARTIAL)\s*\|\s*([^|]+)\s*\|\s*([^|]+)'
+        
+        # Find all matches in the text
+        matches = re.findall(table_pattern, text, re.MULTILINE)
+        
+        if not matches:
+            return []
+        
+        # Format the matches into structured data
+        table_rows = []
+        for match in matches:
+            row = {
+                "row_number": int(match[0].strip()),
+                "category": match[1].strip(),
+                "status": match[2].strip(),
+                "description": match[3].strip(),
+                "policy_reference": match[4].strip()
+            }
+            table_rows.append(row)
+        
+        return table_rows
     
     def split_text(self, text):
         """Split text into overlapping chunks"""

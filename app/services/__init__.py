@@ -1,3 +1,11 @@
-from app.services.user_service import UserService
+"""Service modules for business logic"""
 
-__all__ = ["UserService"] 
+from app.services.user_service import UserService
+from app.services.question_service import DocumentQA
+from app.services.feedback_service import FeedbackService
+
+__all__ = [
+    "UserService",
+    "DocumentQA",
+    "FeedbackService"
+] 

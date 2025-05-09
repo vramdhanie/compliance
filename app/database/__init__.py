@@ -12,6 +12,8 @@ from app.database.types import (
 )
 from app.database.documents import DocumentStorage
 from app.database.vector_store import VectorStore
+from app.database.qa_storage import QAStorage
+from app.database.qa_vector_store import QAVectorStore
 
 __all__ = [
     "db",
@@ -23,5 +25,7 @@ __all__ = [
     "DeleteResult",
     "Cursor",
     "DocumentStorage",
-    "VectorStore"
+    "VectorStore",
+    "QAStorage",
+    "QAVectorStore"
 ] 
