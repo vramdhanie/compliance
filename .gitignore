@@ -46,3 +46,7 @@ chromadb/
 data/
 chroma_qa_db/
 chroma_db/
+
+# Local working data — company policy PDFs and questionnaires stay out of the repo
+pdfs/
+*.xlsx
